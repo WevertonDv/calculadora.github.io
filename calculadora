@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Calculadora de Notas Escolares</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    body {
+      background-color: #0f0f10;
+      color: #1a1a1a;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      background-color: #ffffff;
+      width: 100%;
+      max-width: 480px;
+      padding: 30px;
+      border-radius: 16px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    }
+
+    h1 {
+      font-size: 1.6rem;
+      text-align: center;
+      margin-bottom: 20px;
+      color: #111111;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 24px;
+      background-color: #f1f1f5;
+      padding: 5px;
+      border-radius: 10px;
+    }
+
+    .tab-btn {
+      flex: 1;
+      padding: 10px;
+      border: none;
+      background: transparent;
+      font-weight: 600;
+      cursor: pointer;
+      border-radius: 8px;
+      transition: all 0.2s ease;
+      color: #555555;
+    }
+
+    .tab-btn.active {
+      background-color: #000000;
+      color: #ffffff;
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    label {
+      display: block;
+      font-size: 0.9rem;
+      font-weight: 600;
+      margin-bottom: 6px;
+      color: #333333;
+    }
+
+    input[type="number"] {
+      width: 100%;
+      padding: 12px;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      font-size: 1rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    input[type="number"]:focus {
+      border-color: #000000;
+    }
+
+    .weight-tag {
+      font-size: 0.8rem;
+      color: #666666;
+      font-weight: normal;
+    }
+
+    button.calc-btn {
+      width: 100%;
+      padding: 14px;
+      background-color: #000000;
+      color: #ffffff;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: bold;
+      cursor: pointer;
+      margin-top: 10px;
+      transition: background-color 0.2s;
+    }
+
+    button.calc-btn:hover {
+      background-color: #222222;
+    }
+
+    .result-card {
+      margin-top: 24px;
+      padding: 16px;
+      border-radius: 8px;
+      display: none;
+      text-align: center;
+    }
+
+    .result-card.approved {
+      background-color: #e6f4ea;
+      border: 1px solid #34a853;
+      color: #137333;
+    }
+
+    .result-card.disapproved {
+      background-color: #fce8e6;
+      border: 1px solid #ea4335;
+      color: #c5221f;
+    }
+
+    .result-card.pending {
+      background-color: #feefc3;
+      border: 1px solid #fbbc04;
+      color: #b06000;
+    }
+
+    .result-card h2 {
+      font-size: 1.3rem;
+      margin-bottom: 6px;
+    }
+
+    .result-card p {
+      font-size: 0.95rem;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <h1>Cálculo de Notas</h1>
+
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchMode('annual')">Anual (4 Bimestres)</button>
+      <button class="tab-btn" onclick="switchMode('semester')">Semestral (2 Notas)</button>
+    </div>
+
+    <form id="gradeForm" onsubmit="calculate(event)">
+      <div id="fieldsContainer">
+        <!-- Campos gerados via JavaScript -->
+      </div>
+
+      <button type="submit" class="calc-btn">Calcular Situação</button>
+    </form>
+
+    <div id="result" class="result-card">
+      <h2 id="statusTitle"></h2>
+      <p id="statusDetails"></p>
+    </div>
+  </div>
+
+  <script>
+    let currentMode = 'annual';
+
+    function renderFields() {
+      const container = document.getElementById('fieldsContainer');
+      container.innerHTML = '';
+
+      if (currentMode === 'annual') {
+        container.innerHTML = `
+          <div class="form-group">
+            <label for="n1">1º Bimestre <span class="weight-tag">(Peso 2)</span></label>
+            <input type="number" id="n1" step="0.1" min="0" max="100" placeholder="Ex: 60">
+          </div>
+          <div class="form-group">
+            <label for="n2">2º Bimestre <span class="weight-tag">(Peso 2)</span></label>
+            <input type="number" id="n2" step="0.1" min="0" max="100" placeholder="Ex: 60">
+          </div>
+          <div class="form-group">
+            <label for="n3">3º Bimestre <span class="weight-tag">(Peso 3)</span></label>
+            <input type="number" id="n3" step="0.1" min="0" max="100" placeholder="Ex: 60">
+          </div>
+          <div class="form-group">
+            <label for="n4">4º Bimestre <span class="weight-tag">(Peso 3)</span></label>
+            <input type="number" id="n4" step="0.1" min="0" max="100" placeholder="Ex: 60">
+          </div>
+        `;
+      } else {
+        container.innerHTML = `
+          <div class="form-group">
+            <label for="n1">1ª Nota Semestral <span class="weight-tag">(Peso 2)</span></label>
+            <input type="number" id="n1" step="0.1" min="0" max="100" placeholder="Ex: 60">
+          </div>
+          <div class="form-group">
+            <label for="n2">2ª Nota Semestral <span class="weight-tag">(Peso 3)</span></label>
+            <input type="number" id="n2" step="0.1" min="0" max="100" placeholder="Ex: 60">
+          </div>
+        `;
+      }
+
+      document.getElementById('result').style.display = 'none';
+    }
+
+    function switchMode(mode) {
+      currentMode = mode;
+      const buttons = document.querySelectorAll('.tab-btn');
+      buttons[0].classList.toggle('active', mode === 'annual');
+      buttons[1].classList.toggle('active', mode === 'semester');
+      renderFields();
+    }
+
+    function calculate(event) {
+      event.preventDefault();
+
+      const targetAvg = 60;
+      const resultCard = document.getElementById('result');
+      const statusTitle = document.getElementById('statusTitle');
+      const statusDetails = document.getElementById('statusDetails');
+
+      if (currentMode === 'annual') {
+        const v1 = parseFloat(document.getElementById('n1').value);
+        const v2 = parseFloat(document.getElementById('n2').value);
+        const v3 = parseFloat(document.getElementById('n3').value);
+        const v4 = parseFloat(document.getElementById('n4').value);
+
+        const weights = [2, 2, 3, 3];
+        const values = [v1, v2, v3, v4];
+        const totalWeight = 10;
+        const targetPoints = targetAvg * totalWeight; // 600 pontos no total ponderado
+
+        let currentSum = 0;
+        let missingWeight = 0;
+
+        values.forEach((val, idx) => {
+          if (!isNaN(val)) {
+            currentSum += val * weights[idx];
+          } else {
+            missingWeight += weights[idx];
+          }
+        });
+
+        // Se todas as notas foram preenchidas
+        if (missingWeight === 0) {
+          const avg = currentSum / totalWeight;
+          resultCard.style.display = 'block';
+
+          if (avg >= targetAvg) {
+            resultCard.className = 'result-card approved';
+            statusTitle.innerText = 'Aprovado! 🎉';
+            statusDetails.innerText = `Sua média final foi ${avg.toFixed(1)}. Parabéns!`;
+          } else {
+            const pointsNeeded = targetAvg - avg;
+            resultCard.className = 'result-card disapproved';
+            statusTitle.innerText = 'Reprovado 😞';
+            statusDetails.innerText = `Sua média foi ${avg.toFixed(1)}. Faltaram ${pointsNeeded.toFixed(1)} pontos na média para atingir 60.`;
+          }
+        } else {
+          // Preenchimento parcial (projeção de quanto falta)
+          const neededPointsSum = targetPoints - currentSum;
+          const neededAvgOnRemaining = neededPointsSum / missingWeight;
+
+          resultCard.style.display = 'block';
+          resultCard.className = 'result-card pending';
+
+          if (neededAvgOnRemaining > 100) {
+            statusTitle.innerText = 'Atenção!';
+            statusDetails.innerText = `Mesmo tirando 100 nas notas restantes, seu acumulado não atinge a média 60.`;
+          } else if (neededAvgOnRemaining <= 0) {
+            statusTitle.innerText = 'Praticamente Aprovado!';
+            statusDetails.innerText = `Com as notas já lançadas, você já garantiu a pontuação necessária para passar!`;
+          } else {
+            statusTitle.innerText = 'Situação Parcial';
+            statusDetails.innerText = `Você precisa tirar uma média de ${neededAvgOnRemaining.toFixed(1)} no(s) bimestre(s) restante(s) para ser aprovado.`;
+          }
+        }
+
+      } else {
+        // Modo Semestral
+        const v1 = parseFloat(document.getElementById('n1').value);
+        const v2 = parseFloat(document.getElementById('n2').value);
+
+        const weights = [2, 3];
+        const values = [v1, v2];
+        const totalWeight = 5;
+        const targetPoints = targetAvg * totalWeight; // 300 pontos ponderados
+
+        if (!isNaN(v1) && !isNaN(v2)) {
+          const avg = (v1 * 2 + v2 * 3) / totalWeight;
+          resultCard.style.display = 'block';
+
+          if (avg >= targetAvg) {
+            resultCard.className = 'result-card approved';
+            statusTitle.innerText = 'Aprovado! 🎉';
+            statusDetails.innerText = `Sua média semestral foi ${avg.toFixed(1)}.`;
+          } else {
+            const pointsNeeded = targetAvg - avg;
+            resultCard.className = 'result-card disapproved';
+            statusTitle.innerText = 'Reprovado 😞';
+            statusDetails.innerText = `Sua média foi ${avg.toFixed(1)}. Faltaram ${pointsNeeded.toFixed(1)} pontos para a média 60.`;
+          }
+        } else if (!isNaN(v1) && isNaN(v2)) {
+          // Apenas a 1ª nota preenchida
+          const currentSum = v1 * 2;
+          const neededVal2 = (targetPoints - currentSum) / 3;
+
+          resultCard.style.display = 'block';
+          resultCard.className = 'result-card pending';
+
+          if (neededVal2 > 100) {
+            statusTitle.innerText = 'Atenção!';
+            statusDetails.innerText = `Mesmo tirando 100 na 2ª nota, não será possível atingir a média 60.`;
+          } else if (neededVal2 <= 0) {
+            statusTitle.innerText = 'Aprovado!';
+            statusDetails.innerText = `Sua primeira nota foi tão alta que você já atingiu os pontos necessários!`;
+          } else {
+            statusTitle.innerText = 'Situação Parcial';
+            statusDetails.innerText = `Você precisa tirar no mínimo ${neededVal2.toFixed(1)} na 2ª nota (peso 3) para ser aprovado.`;
+          }
+        } else {
+          resultCard.style.display = 'block';
+          resultCard.className = 'result-card pending';
+          statusTitle.innerText = 'Insira as notas';
+          statusDetails.innerText = `Preencha pelo menos a primeira nota para calcular a projeção.`;
+        }
+      }
+    }
+
+    // Inicializa os campos ao carregar a página
+    renderFields();
+  </script>
+</body>
+</html>
